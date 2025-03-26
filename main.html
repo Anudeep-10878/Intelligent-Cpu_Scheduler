@@ -494,8 +494,9 @@
             document.getElementById('table-head').classList.remove('hidden');
 
             const totalDuration = result.gantt.reduce((acc, cur) => acc + cur.duration, 0);
-            
-            result.gantt.forEach((segment) => {
+            let lastDisplayedTime = null;
+
+            result.gantt.forEach((segment, index) => {
                 const width = (segment.duration / totalDuration) * 100;
                 const endTime = segment.start + segment.duration;
                 const segmentDiv = document.createElement('div');
@@ -509,16 +510,27 @@
                 }
 
                 segmentDiv.style.width = `${width}%`;
+                
+                // Display start time only for first segment
+                let timeHTML = '';
+                if (index === 0) {
+                    timeHTML += `<div class="gantt-time start font-semibold text-xs">${segment.start}</div>`;
+                }
+
+                // Display end time for all segments
+                timeHTML += `<div class="gantt-time end font-semibold text-xs">${endTime}</div>`;
+
                 segmentDiv.innerHTML = `
                     <div style="position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
                         ${segment.process === 'Idle' ? '' : String.fromCharCode(65 + segment.process)}
                     </div>
-                    <div class="gantt-time start">${segment.start}</div>
-                    <div class="gantt-time end">${endTime}</div>
+                    ${timeHTML}
                 `;
 
                 ganttChart.appendChild(segmentDiv);
+                lastDisplayedTime = endTime;
             });
+
 
             result.arrival_times.forEach((_, i) => {
                 tableBody.innerHTML += `
