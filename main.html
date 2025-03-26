@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Scheduling Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        .gantt-container {
+            width: 800px;
+            background: #f8fafc;
+            padding: 20px 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow-x: hidden;
+            height: 80px;
+        }
+
+        .gantt-segment {
+            display: inline-block;
+            height: 50px;
+            position: relative;
+            transition: transform 0.2s;
+            animation: slideIn 0.5s ease-out;
+            border-right: 2px solid white;
+            vertical-align: top;
+            line-height: 50px;
+            text-align: center;
+        }
+
+        .idle-segment {
+            background-color: #b2b2b2 !important;
+        }
+
+        .gantt-time {
+            position: absolute;
+            bottom: -25px;
+            font-size: 12px;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .gantt-time.start {
+            left: 0;
+            transform: translateX(-50%);
+        }
+
+        .gantt-time.end {
+            right: 0;
+            transform: translateX(50%);
+        }
+
+        @keyframes slideIn {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        .popup-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .popup-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            max-width: 90%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-7xl mx-auto space-y-6">
+        <!-- Main Heading -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold">CPU Scheduling Simulator</h1>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6">
+            <!-- Input Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 flex-1">
+                <h2 class="text-2xl font-bold mb-4">Input Parameters</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block font-medium mb-2">Algorithm</label>
+                        <select id="algorithm" onchange="toggleAdditionalInputs()" class="w-full p-2 border rounded">
+                            <option>First Come First Serve, FCFS</option>
+                            <option>Shortest Job First, SJF</option>
+                            <option>Round Robin, RR</option>
+                            <option>Priority Scheduling</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-2">Arrival Times</label>
+                        <input id="arrival-times" type="text" placeholder="0 1 2 3 4" class="w-full p-2 border rounded">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-2">Burst Times</label>
+                        <input id="burst-times" type="text" placeholder="5 3 8 4 2" class="w-full p-2 border rounded">
+                    </div>
+                    <div id="time-quantum-input" class="hidden">
+                        <label class="block font-medium mb-2">Time Quantum</label>
+                        <input id="time-quantum" type="number" class="w-full p-2 border rounded">
+                    </div>
+                    <div id="priority-input" class="hidden">
+                        <label class="block font-medium mb-2">Priorities (lower number = higher priority)</label>
+                        <input id="priorities" type="text" placeholder="1 2 3 4 5" class="w-full p-2 border rounded">
+                    </div>
+                    <button onclick="solve()" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Calculate Schedule
+                    </button>
+                </div>
+            </div>
+
+            <!-- GitHub Button for Mobile -->
+<div class="flex justify-center md:hidden mt-4">
+    <a href="https://github.com/Anudeep-10878/Intelligent-Cpu_Scheduler/tree/main" 
+       target="_blank" 
+       rel="noopener noreferrer" 
+       class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 text-gray-700 hover:text-gray-900">
+        <i class="fab fa-github text-xl"></i>
+        <span class="text-lg font-medium">View on GitHub</span>
+    </a>
+</div>
+
+            <!-- Output Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 flex-1">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Results</h2>
+                    <span id="selected-algorithm" class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm"></span>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="font-medium mb-2">Gantt Chart</h3>
+                    <div id="gantt-chart" class="gantt-container"></div>
+                </div>
+
+                <h3 class="font-medium mb-2">Process Details</h3>
+                <table class="w-full border-collapse">
+                    <thead id="table-head" class="hidden">
+                        <tr class="bg-gray-50">
+                            <th class="border py-2">Process</th>
+                            <th class="border py-2">Arrival</th>
+                            <th class="border py-2">Burst</th>
+                            <th class="border py-2">Finish</th>
+                            <th class="border py-2">Turnaround</th>
+                            <th class="border py-2">Waiting</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- GitHub Button for Desktop -->
+<div class="hidden md:flex justify-center mt-4">
+    <a href="https://github.com/Anudeep-10878/Intelligent-Cpu_Scheduler/tree/main" 
+       target="_blank" 
+       rel="noopener noreferrer" 
+       class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 text-gray-700 hover:text-gray-900">
+        <i class="fab fa-github text-xl"></i>
+        <span class="text-lg font-medium">GitHub</span>
+    </a>
+</div>
+
+        <!-- Error Popup -->
+        <div id="popup" class="popup-container hidden">
+            <div class="popup-content">
+                <p id="popup-message" class="text-red-600 font-medium mb-4"></p>
+                <button onclick="closePopup()" 
+                        class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Scheduling Algorithms
+        function solveFCFS(arrivalTimes, burstTimes) {
+            const n = arrivalTimes.length;
+            let gantt = [];
+            let finishTimes = new Array(n);
+            let turnaroundTimes = new Array(n);
+            let waitingTimes = new Array(n);
+
+            const processes = arrivalTimes.map((at, i) => ({id: i, at, bt: burstTimes[i]}))
+                                        .sort((a, b) => a.at - b.at);
+            
+            let currentTime = processes.length > 0 ? Math.min(...arrivalTimes) : 0;
+
+            for (const p of processes) {
+                if (currentTime < p.at) {
+                    const idleDuration = p.at - currentTime;
+                    gantt.push({process: 'Idle', start: currentTime, duration: idleDuration});
+                    currentTime = p.at;
+                }
+                
+                const start = currentTime;
+                currentTime += p.bt;
+                gantt.push({process: p.id, start, duration: p.bt});
+                
+                finishTimes[p.id] = currentTime;
+                turnaroundTimes[p.id] = currentTime - p.at;
+                waitingTimes[p.id] = turnaroundTimes[p.id] - p.bt;
+            }
+
+            return {
+                gantt,
+                arrival_times: arrivalTimes,
+                burst_times: burstTimes,
+                finish_times: finishTimes,
+                turnaround_times: turnaroundTimes,
+                waiting_times: waitingTimes,
+                averages: {
+                    turnaround: turnaroundTimes.reduce((a,b) => a+b, 0) / n,
+                    waiting: waitingTimes.reduce((a,b) => a+b, 0) / n
+                }
+            };
+        }
+
+        function solveSJF(arrivalTimes, burstTimes) {
+            const n = arrivalTimes.length;
+            let gantt = [];
+            let finishTimes = new Array(n);
+            let turnaroundTimes = new Array(n);
+            let waitingTimes = new Array(n);
+            
+            const processes = arrivalTimes.map((at, i) => ({
+                id: i,
+                at,
+                bt: burstTimes[i],
+                completed: false
+            })).sort((a, b) => a.at - b.at);
+
+            let currentTime = processes.length > 0 ? Math.min(...arrivalTimes) : 0;
+            let completed = 0;
+
+            while (completed < n) {
+                let idx = -1;
+                let minBT = Infinity;
+                
+                for (let i = 0; i < n; i++) {
+                    if (!processes[i].completed && 
+                        processes[i].at <= currentTime &&
+                        processes[i].bt < minBT) {
+                        minBT = processes[i].bt;
+                        idx = i;
+                    }
+                }
+
+                if (idx === -1) {
+                    const nextArrival = Math.min(...processes.filter(p => !p.completed).map(p => p.at));
+                    const idleDuration = nextArrival - currentTime;
+                    gantt.push({process: 'Idle', start: currentTime, duration: idleDuration});
+                    currentTime = nextArrival;
+                    continue;
+                }
+
+                const process = processes[idx];
+                const start = currentTime;
+                currentTime += process.bt;
+                gantt.push({process: process.id, start, duration: process.bt});
+                
+                finishTimes[process.id] = currentTime;
+                turnaroundTimes[process.id] = currentTime - process.at;
+                waitingTimes[process.id] = turnaroundTimes[process.id] - process.bt;
+                
+                process.completed = true;
+                completed++;
+            }
+
+            return {
+                gantt,
+                arrival_times: arrivalTimes,
+                burst_times: burstTimes,
+                finish_times: finishTimes,
+                turnaround_times: turnaroundTimes,
+                waiting_times: waitingTimes,
+                averages: {
+                    turnaround: turnaroundTimes.reduce((a,b) => a+b, 0) / n,
+                    waiting: waitingTimes.reduce((a,b) => a+b, 0) / n
+                }
+            };
+        }
+
+        function solveRR(arrivalTimes, burstTimes, timeQuantum) {
+            const n = arrivalTimes.length;
+            let gantt = [];
+            let finishTimes = new Array(n).fill(0);
+            let remainingTime = [...burstTimes];
+            
+            const processes = arrivalTimes.map((at, i) => ({id: i, at, bt: burstTimes[i]}))
+                                    .sort((a, b) => a.at - b.at);
+            
+            let currentTime = processes.length > 0 ? Math.min(...arrivalTimes) : 0;
+            let queue = [];
+
+            while (processes.length || queue.length) {
+                while (processes.length && processes[0].at <= currentTime) {
+                    queue.push(processes.shift());
+                }
+
+                if (!queue.length) {
+                    const nextArrival = processes[0].at;
+                    const idleDuration = nextArrival - currentTime;
+                    gantt.push({process: 'Idle', start: currentTime, duration: idleDuration});
+                    currentTime = nextArrival;
+                    continue;
+                }
+
+                const process = queue.shift();
+                const duration = Math.min(remainingTime[process.id], timeQuantum);
+                gantt.push({process: process.id, start: currentTime, duration});
+                currentTime += duration;
+                remainingTime[process.id] -= duration;
+
+                while (processes.length && processes[0].at <= currentTime) {
+                    queue.push(processes.shift());
+                }
+
+                if (remainingTime[process.id] > 0) {
+                    queue.push(process);
+                } else {
+                    finishTimes[process.id] = currentTime;
+                }
+            }
+
+            const turnaroundTimes = finishTimes.map((ft, i) => ft - arrivalTimes[i]);
+            const waitingTimes = turnaroundTimes.map((tt, i) => tt - burstTimes[i]);
+
+            return {
+                gantt,
+                arrival_times: arrivalTimes,
+                burst_times: burstTimes,
+                finish_times: finishTimes,
+                turnaround_times: turnaroundTimes,
+                waiting_times: waitingTimes,
+                averages: {
+                    turnaround: turnaroundTimes.reduce((a,b) => a+b, 0) / n,
+                    waiting: waitingTimes.reduce((a,b) => a+b, 0) / n
+                }
+            };
+        }
+
+        function solvePriority(arrivalTimes, burstTimes, priorities) {
+            const n = arrivalTimes.length;
+            let gantt = [];
+            let finishTimes = new Array(n);
+            let turnaroundTimes = new Array(n);
+            let waitingTimes = new Array(n);
+            
+            const processes = arrivalTimes.map((at, i) => ({
+                id: i,
+                at,
+                bt: burstTimes[i],
+                priority: priorities[i],
+                completed: false
+            })).sort((a, b) => a.at - b.at);
+
+            let currentTime = processes.length > 0 ? Math.min(...arrivalTimes) : 0;
+            let completed = 0;
+
+            while (completed < n) {
+                let idx = -1;
+                let highestPriority = Infinity;
+                
+                for (let i = 0; i < n; i++) {
+                    if (!processes[i].completed && 
+                        processes[i].at <= currentTime &&
+                        processes[i].priority < highestPriority) {
+                        highestPriority = processes[i].priority;
+                        idx = i;
+                    }
+                }
+
+                if (idx === -1) {
+                    const nextArrival = Math.min(...processes.filter(p => !p.completed).map(p => p.at));
+                    const idleDuration = nextArrival - currentTime;
+                    gantt.push({process: 'Idle', start: currentTime, duration: idleDuration});
+                    currentTime = nextArrival;
+                    continue;
+                }
+
+                const process = processes[idx];
+                const start = currentTime;
+                currentTime += process.bt;
+                gantt.push({process: process.id, start, duration: process.bt});
+                
+                finishTimes[process.id] = currentTime;
+                turnaroundTimes[process.id] = currentTime - process.at;
+                waitingTimes[process.id] = turnaroundTimes[process.id] - process.bt;
+                
+                process.completed = true;
+                completed++;
+            }
+
+            return {
+                gantt,
+                arrival_times: arrivalTimes,
+                burst_times: burstTimes,
+                finish_times: finishTimes,
+                turnaround_times: turnaroundTimes,
+                waiting_times: waitingTimes,
+                averages: {
+                    turnaround: turnaroundTimes.reduce((a,b) => a+b, 0) / n,
+                    waiting: waitingTimes.reduce((a,b) => a+b, 0) / n
+                }
+            };
+        }
+
+        // UI Functions
+        function solve() {
+            const algorithm = document.getElementById('algorithm').value;
+            const arrivalInput = document.getElementById('arrival-times').value.trim();
+            const burstInput = document.getElementById('burst-times').value.trim();
+            const timeQuantum = Number(document.getElementById('time-quantum').value);
+            const priorityInput = document.getElementById('priorities').value.trim();
+
+            // Input validation
+            if (!arrivalInput || !burstInput) {
+                showPopup("Error: Please enter both arrival times and burst times");
+                return;
+            }
+
+            const arrivalTimes = arrivalInput.split(' ').map(Number);
+            const burstTimes = burstInput.split(' ').map(Number);
+
+            if (arrivalTimes.length !== burstTimes.length) {
+                showPopup("Error: Number of arrival times must match number of burst times");
+                return;
+            }
+
+            if (arrivalTimes.some(isNaN) || burstTimes.some(isNaN)) {
+                showPopup("Error: Please enter valid numbers for arrival and burst times");
+                return;
+            }
+
+            let result;
+            switch(algorithm) {
+                case 'First Come First Serve, FCFS':
+                    result = solveFCFS(arrivalTimes, burstTimes);
+                    break;
+                case 'Shortest Job First, SJF':
+                    result = solveSJF(arrivalTimes, burstTimes);
+                    break;
+                case 'Round Robin, RR':
+                    if (!timeQuantum) {
+                        showPopup("Please enter time quantum for Round Robin");
+                        return;
+                    }
+                    result = solveRR(arrivalTimes, burstTimes, timeQuantum);
+                    break;
+                case 'Priority Scheduling':
+                    if (!priorityInput) {
+                        showPopup("Please enter priorities for Priority Scheduling");
+                        return;
+                    }
+                    const priorities = priorityInput.split(' ').map(Number);
+                    if (priorities.length !== arrivalTimes.length) {
+                        showPopup("Error: Number of priorities must match number of processes");
+                        return;
+                    }
+                    if (priorities.some(isNaN)) {
+                        showPopup("Error: Invalid priorities entered");
+                        return;
+                    }
+                    result = solvePriority(arrivalTimes, burstTimes, priorities);
+                    break;
+                default:
+                    showPopup("Algorithm not implemented yet");
+                    return;
+            }
+
+            displayOutput(result);
+        }
+
+        function displayOutput(result) {
+            const ganttChart = document.getElementById('gantt-chart');
+            const tableBody = document.getElementById('table-body');
+            
+            ganttChart.innerHTML = '';
+            tableBody.innerHTML = '';
+            document.getElementById('table-head').classList.remove('hidden');
+
+            const totalDuration = result.gantt.reduce((acc, cur) => acc + cur.duration, 0);
+            
+            result.gantt.forEach((segment) => {
+                const width = (segment.duration / totalDuration) * 100;
+                const endTime = segment.start + segment.duration;
+                const segmentDiv = document.createElement('div');
+                
+                if (segment.process === 'Idle') {
+                    segmentDiv.className = 'gantt-segment idle-segment';
+                } else {
+                    const hue = (segment.process * 60) % 360;
+                    segmentDiv.style.backgroundColor = `hsl(${hue}, 70%, 80%)`;
+                    segmentDiv.className = 'gantt-segment';
+                }
+
+                segmentDiv.style.width = `${width}%`;
+                segmentDiv.innerHTML = `
+                    <div style="position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                        ${segment.process === 'Idle' ? '' : String.fromCharCode(65 + segment.process)}
+                    </div>
+                    <div class="gantt-time start">${segment.start}</div>
+                    <div class="gantt-time end">${endTime}</div>
+                `;
+
+                ganttChart.appendChild(segmentDiv);
+            });
+
+            result.arrival_times.forEach((_, i) => {
+                tableBody.innerHTML += `
+                    <tr>
+                        <td class="border px-4 py-2">${String.fromCharCode(65 + i)}</td>
+                        <td class="border px-4 py-2">${result.arrival_times[i]}</td>
+                        <td class="border px-4 py-2">${result.burst_times[i]}</td>
+                        <td class="border px-4 py-2">${result.finish_times[i]}</td>
+                        <td class="border px-4 py-2">${result.turnaround_times[i]}</td>
+                        <td class="border px-4 py-2">${result.waiting_times[i]}</td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML += `
+                <tr class="bg-gray-100">
+                    <td class="border px-4 py-2 font-semibold" colspan="4">Average</td>
+                    <td class="border px-4 py-2 font-semibold">${result.averages.turnaround.toFixed(2)}</td>
+                    <td class="border px-4 py-2 font-semibold">${result.averages.waiting.toFixed(2)}</td>
+                </tr>
+            `;
+        }
+
+        function toggleAdditionalInputs() {
+            const algorithm = document.getElementById('algorithm').value;
+            
+            // Clear all inputs and results
+            document.getElementById('arrival-times').value = '';
+            document.getElementById('burst-times').value = '';
+            document.getElementById('time-quantum').value = '';
+            document.getElementById('priorities').value = '';
+            document.getElementById('table-head').classList.add('hidden');
+            document.getElementById('table-body').innerHTML = '';
+            document.getElementById('gantt-chart').innerHTML = '';
+            
+            // Toggle additional inputs
+            document.getElementById('time-quantum-input').classList.toggle('hidden', algorithm !== 'Round Robin, RR');
+            document.getElementById('priority-input').classList.toggle('hidden', algorithm !== 'Priority Scheduling');
+            document.getElementById('selected-algorithm').textContent = algorithm.split(',')[0];
+        }
+
+        function showPopup(message) {
+            document.getElementById('popup-message').textContent = message;
+            document.getElementById('popup').classList.remove('hidden');
+        }
+
+        function closePopup() {
+            document.getElementById('popup').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', toggleAdditionalInputs);
+    </script>
+</body>
+</html>
