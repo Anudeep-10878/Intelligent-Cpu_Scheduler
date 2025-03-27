@@ -1,129 +1,120 @@
 1. Project Overview
 Goals:
-Develop a simulator that demonstrates CPU scheduling algorithms (FCFS, SJF, Round Robin, Priority Scheduling).
+Develop an interactive CPU scheduling simulator that visualizes different scheduling algorithms.
 
-Provide real-time visualization of Gantt charts and performance metrics (Average Waiting Time, Turnaround Time).
+Allow users to input processes dynamically and see real-time Gantt charts and performance metrics.
 
-Allow users to input processes dynamically (arrival time, burst time, priority).
-
-Optimize scheduling using intelligent heuristics (if extending to ML).
+Provide insights into scheduling performance through calculations of average waiting time (AWT), turnaround time (TAT), and CPU utilization.
 
 Expected Outcomes:
-Interactive GUI for entering processes.
+A fully functional GUI-based simulator for CPU scheduling.
 
-Real-time Gantt chart visualization.
+Real-time Gantt chart visualizations to help users understand scheduling behaviors.
 
-Calculation and display of scheduling performance metrics.
-
-Potential for an AI-powered enhancement (optional).
+Comparison of algorithms based on performance metrics.
 
 Scope:
-Core implementation: FCFS, SJF, Round Robin, Priority Scheduling.
+Support for FCFS, SJF, Round Robin, and Priority Scheduling.
 
-Data visualization: Dynamic Gantt charts and performance graphs.
+Real-time visualization of scheduling results.
 
-User interface: Interactive, easy-to-use input forms.
+Statistical performance evaluation.
+
+Not in scope: Multi-core scheduling and advanced ML-based optimizations.
 
 2. Module-Wise Breakdown
-1. User Interface (GUI)
-Purpose: Provides an interactive interface to enter processes and display results.
+Module 1: GUI & Input Handling
+Purpose:
 
-2. Scheduling Algorithms & Logic
-Purpose: Implements FCFS, SJF, Round Robin, and Priority Scheduling logic, calculates metrics.
+Provides an interface for users to input process details and select a scheduling algorithm.
 
-3. Data Visualization & Performance Analysis
-Purpose: Generates real-time Gantt charts, computes waiting time, and displays statistics.
+Displays the real-time scheduling results.
+
+Roles:
+
+Accepts process details: Arrival Time, Burst Time, Priority (if applicable), Time Quantum (for RR).
+
+Displays the Gantt chart, process queue, and scheduling statistics.
+
+Module 2: Scheduling Algorithm Processing
+Purpose:
+
+Implements CPU scheduling algorithms and computes Gantt charts.
+
+Calculates AWT, TAT, and CPU utilization.
+
+Roles:
+
+Implements FCFS, SJF (Preemptive & Non-Preemptive), Round Robin, and Priority Scheduling.
+
+Manages queue processing and task execution simulation.
+
+Sends output to the GUI module for visualization.
+
+Module 3: Data Visualization & Performance Metrics
+Purpose:
+
+Provides real-time visualization of scheduling.
+
+Displays Gantt charts, bar graphs, and tables for statistical insights.
+
+Roles:
+
+Generates a dynamic Gantt chart using Matplotlib or D3.js.
+
+Computes AWT, TAT, and CPU utilization.
+
+Displays tabular comparisons of algorithms.
 
 3. Functionalities
-Module 1: User Interface (GUI)
-Input Form: Users enter arrival time, burst time, priority, and time quantum (for RR).
-
-Start/Reset Button: Start simulation and reset inputs.
-
-Algorithm Selection: Dropdown to select a scheduling algorithm.
-
-Example: A user selects "Round Robin", enters time quantum = 2, clicks "Run".
-
-Module 2: Scheduling Algorithms & Logic
-Implementation of FCFS, SJF, RR, and Priority Scheduling.
-
-Process Execution Simulation: Simulates CPU execution with time progression.
-
-Performance Metric Calculation:
-
-Average Waiting Time: 
-𝐴
-𝑊
-𝑇
-=
-∑
-(
-𝑊
-𝑇
-)
-Total Processes
-AWT= 
-Total Processes
-∑(WT)
-​
- 
-
-Turnaround Time: 
-𝑇
-𝐴
-𝑇
-=
-Completion Time
-−
-Arrival Time
-TAT=Completion Time−Arrival Time
-
-Example: A process arrives at time 0 with burst time 5, another at time 2 with burst 3. The simulator calculates completion order.
-
-Module 3: Data Visualization & Performance Analysis
-Gantt Chart Visualization: Displays CPU execution over time.
-
-Performance Metrics Display: Shows Avg. WT, Avg. TAT, and CPU utilization.
-
-Real-time Updates: Animates process execution dynamically.
-
-Example: A user runs "Priority Scheduling", and a real-time Gantt chart appears.
-
+Module	Key Features	Examples
+GUI & Input Handling	User-friendly interface, process table, dropdown for algorithm selection	Form to enter process details, buttons to start/clear scheduling
+Scheduling Algorithms	Implements FCFS, SJF, RR, Priority Scheduling, handles real-time task execution	Computes Gantt chart, calculates AWT, TAT
+Data Visualization	Gantt charts, performance comparison graphs, tables for metrics	Dynamic Gantt chart display, bar charts for AWT, TAT comparison
 4. Technology Recommendations
-Programming Language
-Python (Easy GUI, strong visualization, ML capabilities)
+Programming Language:
+Python (Easy to implement with good libraries for visualization)
 
-JavaScript (React.js + D3.js) (For a web-based version)
+JavaScript (React.js + D3.js) (If you want a web-based version)
 
-Libraries & Tools
-Feature	Python	JavaScript
-GUI	Tkinter / PyQt	React.js
-Algorithms	Custom Python logic	JavaScript logic
-Visualization	Matplotlib / Seaborn	D3.js
-Data Handling	Pandas	JavaScript Arrays
-ML (Optional)	Scikit-Learn	TensorFlow.js
+Libraries:
+Functionality	Recommended Libraries
+GUI	Tkinter (Python), PyQt, React.js (for web version)
+Algorithm Implementation	NumPy, Pandas (for managing data structures)
+Data Visualization	Matplotlib, Seaborn (Python), D3.js (for interactive charts)
 5. Execution Plan
-Step 1: Setup Development Environment
-Install Python (or Node.js for a web version).
+Step 1: Setup Environment & Basic UI (Week 1)
+Choose Python or JS (React + D3.js).
 
-Install required libraries (tkinter, matplotlib, numpy, pandas).
+Set up the UI for input handling.
 
-Step 2: Implement Scheduling Algorithms
-Write functions for FCFS, SJF, RR, and Priority Scheduling.
+Design UI components like process table, start button, dropdowns.
 
-Ensure they return completion order, waiting time, and turnaround time.
+Tip: Use Tkinter or PyQt for Python GUI.
 
-Step 3: Develop GUI
-Create a form for user input.
+Step 2: Implement CPU Scheduling Algorithms (Week 2-3)
+Implement FCFS, SJF, Round Robin, Priority Scheduling.
 
-Add algorithm selection and execution buttons.
+Ensure correct AWT, TAT, and Gantt chart computation.
 
-Step 4: Implement Data Visualization
-Generate a Gantt chart from scheduling results.
+Tip: Start with FCFS (simplest) → move to SJF & Priority → finish with Round Robin.
 
-Display performance metrics.
+Step 3: Develop Real-Time Visualization (Week 4)
+Integrate Matplotlib for Gantt charts.
 
-Step 5: Testing & Optimization
-Test with different process inputs.
+Use separate colors for different processes.
 
-Optimize visualization for smooth animation.
+Tip: Store process execution history as an array and update Gantt chart dynamically.
+
+Step 4: Testing & Optimization (Week 5)
+Test with different datasets.
+
+Optimize for real-time response.
+
+Tip: Profile execution time for large process sets.
+
+Step 5: Final Enhancements & Documentation (Week 6)
+Add usability features (Pause, Reset, Save Report).
+
+Write documentation for installation, usage, and future improvements.
+
